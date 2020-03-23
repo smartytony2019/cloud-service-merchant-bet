@@ -1,14 +1,17 @@
 package com.xinbo.cloud.service.merchant.bet.controller;
 
 import cn.hutool.core.date.DateUtil;
-import com.xinbo.cloud.common.domain.common.Merchant;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xinbo.cloud.common.constant.ApiStatus;
 import com.xinbo.cloud.common.dto.ActionResult;
 import com.xinbo.cloud.common.dto.PageDto;
 import com.xinbo.cloud.common.dto.ResultFactory;
+import com.xinbo.cloud.common.dto.common.MerchantDto;
 import com.xinbo.cloud.common.dto.merchant.api.MerchantSportBetDto;
 import com.xinbo.cloud.common.enums.PlatGameTypeEnum;
-import com.xinbo.cloud.common.service.merchant.api.PlatformApiService;
+import com.xinbo.cloud.common.service.merchant.bet.PlatformBetService;
 import com.xinbo.cloud.common.vo.merchanta.api.QueryRequestVo;
+import com.xinbo.cloud.service.merchant.bet.service.MerchantServiceInterface;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,19 +31,23 @@ import java.util.Date;
 @RequestMapping("platformBet")
 public class PlatformBetController {
     @Autowired
-    @Qualifier("platformApiServiceImpl")
-    private PlatformApiService platformApiService;
+    @Qualifier("platformBetServiceImpl")
+    private PlatformBetService platformBetService;
+    @Autowired
+    @SuppressWarnings("all")
+    private MerchantServiceInterface merchantService;
 
     @ApiOperation(value = "查询注单", notes = "")
     @PostMapping("query")
     public ActionResult query(@Valid @RequestBody QueryRequestVo queryRequestVo) {
         //Step 1: 验证渠道号
-        Merchant merchant = platformApiService.getByMerchantCode(queryRequestVo.getChannel());
-        if (merchant == null) {
+        ActionResult merchantActionResult = merchantService.getByMerchantCode(queryRequestVo.getChannel());
+        if (merchantActionResult.getCode() != ApiStatus.SUCCESS) {
             return ResultFactory.error("渠道不存在");
         }
+        MerchantDto merchant = new ObjectMapper().convertValue(merchantActionResult.getData(), MerchantDto.class);
         //Step 2: 验证签名
-        boolean isValidate = platformApiService.validateSign(queryRequestVo, merchant.getMerchantKey());
+        boolean isValidate = platformBetService.validateSign(queryRequestVo, merchant.getMerchantKey());
         if (!isValidate) {
             return ResultFactory.error("验证签名失败");
         }
@@ -53,7 +60,7 @@ public class PlatformBetController {
             return ResultFactory.error("查询时间有误,查询时间间隔不得超过3天");
 
         if (Integer.parseInt(queryRequestVo.getGameId()) == PlatGameTypeEnum.Sport.getCode()) {
-            PageDto<MerchantSportBetDto> list = platformApiService.getSportBetList(queryRequestVo);
+            PageDto<MerchantSportBetDto> list = platformBetService.getSportBetList(queryRequestVo);
             return ResultFactory.success(list);
         }
         if (Integer.parseInt(queryRequestVo.getGameId()) == PlatGameTypeEnum.Lottery.getCode()) {
