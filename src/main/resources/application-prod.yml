@@ -5,10 +5,20 @@ server:
 ribbon:
   ReadTimeout: 60000
   ConnectTimeout: 60000
+#开启熔断器
+feign:
+  sentinel:
+    enabled: true
 spring:
   application:
     name: cloud-service-merchant-bet
   cloud:
+    #熔断器
+    sentinel:
+      transport:
+        port: ${server.port}
+        dashboard: 45.125.218.106:8002
+    #nacos配置
     nacos:
       discovery:
         server-addr: 103.84.110.202:8848

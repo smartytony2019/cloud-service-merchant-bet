@@ -11,7 +11,7 @@ import com.xinbo.cloud.common.dto.merchant.api.MerchantSportBetDto;
 import com.xinbo.cloud.common.enums.PlatGameTypeEnum;
 import com.xinbo.cloud.common.service.merchant.bet.PlatformBetService;
 import com.xinbo.cloud.common.vo.merchanta.api.QueryRequestVo;
-import com.xinbo.cloud.service.merchant.bet.service.MerchantServiceInterface;
+import com.xinbo.cloud.service.merchant.bet.service.MerchantService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,13 +35,16 @@ public class PlatformBetController {
     private PlatformBetService platformBetService;
     @Autowired
     @SuppressWarnings("all")
-    private MerchantServiceInterface merchantService;
+    private MerchantService merchantService;
 
     @ApiOperation(value = "查询注单", notes = "")
     @PostMapping("query")
     public ActionResult query(@Valid @RequestBody QueryRequestVo queryRequestVo) {
         //Step 1: 验证渠道号
         ActionResult merchantActionResult = merchantService.getByMerchantCode(queryRequestVo.getChannel());
+        if (merchantActionResult.getCode() == ApiStatus.FALLBACK) {
+            return ResultFactory.error(merchantActionResult.getMsg());
+        }
         if (merchantActionResult.getCode() != ApiStatus.SUCCESS) {
             return ResultFactory.error("渠道不存在");
         }
