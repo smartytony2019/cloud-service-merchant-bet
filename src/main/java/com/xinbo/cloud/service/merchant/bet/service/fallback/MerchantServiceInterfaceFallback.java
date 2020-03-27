@@ -3,7 +3,7 @@ package com.xinbo.cloud.service.merchant.bet.service.fallback;
 import com.xinbo.cloud.common.constant.FallbackMessage;
 import com.xinbo.cloud.common.dto.ActionResult;
 import com.xinbo.cloud.common.dto.ResultFactory;
-import com.xinbo.cloud.service.merchant.bet.service.MerchantService;
+import com.xinbo.cloud.service.merchant.bet.service.MerchantServiceInterface;
 import org.springframework.stereotype.Component;
 
 import java.text.MessageFormat;
@@ -14,16 +14,16 @@ import java.text.MessageFormat;
  * @desc 熔断器
  */
 @Component
-public class MerchantServiceFallback implements MerchantService {
+public class MerchantServiceInterfaceFallback implements MerchantServiceInterface {
 
 
     @Override
     public ActionResult getByMerchantCode(String merchantCode) {
-        return ResultFactory.fallback(MessageFormat.format(FallbackMessage.MSG_FORMAT, MerchantService.class.getSimpleName()));
+        return ResultFactory.fallback(MessageFormat.format(FallbackMessage.MSG_FORMAT, MerchantServiceInterface.class.getSimpleName()));
     }
 
     @Override
     public ActionResult getGameAddressList(int gameType){
-        return ResultFactory.fallback(MessageFormat.format(FallbackMessage.MSG_FORMAT, MerchantService.class.getSimpleName()));
+        return ResultFactory.fallback(MessageFormat.format(FallbackMessage.MSG_FORMAT, MerchantServiceInterface.class.getSimpleName()));
     }
 }
