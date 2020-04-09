@@ -1,38 +1,30 @@
 server:
   port: 13100
-  servlet:
-    context-path: /gw-merchant-bet
-
-#Feign请求超时时间
-ribbon:
-  ReadTimeout: 60000
-  ConnectTimeout: 60000
-
-#开启熔断器
-feign:
-  sentinel:
-    enabled: true
-
 spring:
   application:
     name: cloud-service-merchant-bet
-
   cloud:
-    #熔断器
-    sentinel:
-      transport:
-        port: ${server.port}
-        dashboard: 103.84.110.202:8002
-
-    #nacos配置
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
-
+    sentinel:
+      transport:
+        dashboard: 127.0.0.1:8080
 logging:
   level:
     com.xinbo: debug
   file:
     max-size: 5MB
-  path: ./logs/
+dubbo:
+  scan:
+    base-packages: com.xinbo.cloud.service.merchant.bet
+  protocol:
+    name: dubbo
+    port: -1
+  consumer:
+    check: false
+    generic: false
+  registry:
+    address: nacos://127.0.0.1:8848
+    check: false
 

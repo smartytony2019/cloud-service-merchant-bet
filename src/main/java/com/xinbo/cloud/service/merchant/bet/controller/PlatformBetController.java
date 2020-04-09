@@ -1,26 +1,24 @@
 package com.xinbo.cloud.service.merchant.bet.controller;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
-import com.xinbo.cloud.common.constant.ApiStatus;
 import com.xinbo.cloud.common.dto.ActionResult;
+import com.xinbo.cloud.common.dto.PageDto;
 import com.xinbo.cloud.common.dto.ResultFactory;
 import com.xinbo.cloud.common.dto.common.MerchantDto;
+import com.xinbo.cloud.common.dto.sport.MerchantSportBetDto;
 import com.xinbo.cloud.common.enums.PlatGameTypeEnum;
+import com.xinbo.cloud.common.service.api.*;
 import com.xinbo.cloud.common.vo.PageVo;
 import com.xinbo.cloud.common.vo.merchanta.api.QueryRequestVo;
 import com.xinbo.cloud.common.vo.sport.SportBetSearchVo;
 import com.xinbo.cloud.service.merchant.bet.common.PlatformBetCommon;
-import com.xinbo.cloud.service.merchant.bet.service.MerchantService;
-import com.xinbo.cloud.service.merchant.bet.service.SportBetService;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.validation.Valid;
 import java.text.MessageFormat;
 import java.util.Date;
@@ -33,26 +31,19 @@ import java.util.Date;
 @RestController
 @RequestMapping("platformBet")
 public class PlatformBetController {
-    @Autowired
-    @SuppressWarnings("all")
-    private SportBetService sportBetService;
-    @Autowired
-    @SuppressWarnings("all")
-    private MerchantService merchantService;
+
+    @Reference(version = "1.0.0", mock = "com.xinbo.cloud.common.service.mock.MerchantServiceMock")
+    private MerchantServiceApi merchantServiceApi;
+
+    @Reference(version = "1.0.0", mock = "com.xinbo.cloud.common.service.mock.SportBetServiceMock")
+    private SportBetServiceApi sportBetServiceApi;
 
     @ApiOperation(value = "查询注单", notes = "")
     @PostMapping("query")
     public ActionResult query(@Valid @RequestBody QueryRequestVo queryRequestVo) {
         try {
             //Step 1: 验证渠道号
-            ActionResult merchantActionResult = merchantService.getByMerchantCode(queryRequestVo.getChannel());
-            if (merchantActionResult.getCode() == ApiStatus.FALLBACK) {
-                return ResultFactory.error(merchantActionResult.getMsg());
-            }
-            if (merchantActionResult.getCode() != ApiStatus.SUCCESS) {
-                return ResultFactory.error("渠道不存在");
-            }
-            MerchantDto merchant = Convert.convert(MerchantDto.class, merchantActionResult.getData());
+            MerchantDto merchant = PlatformBetCommon.validateMerchant(merchantServiceApi, queryRequestVo.getChannel());
             //Step 2: 验证签名
             PlatformBetCommon.validateSign(queryRequestVo, merchant.getMerchantKey());
             //Step 3: 验证请求时间
@@ -70,15 +61,10 @@ public class PlatformBetController {
             PageVo<SportBetSearchVo> pageVo = PageVo.<SportBetSearchVo>builder().pageNum(queryRequestVo.getPageIndex()).pageSize(queryRequestVo.getPageSize())
                     .model(sportBetSearchVo).build();
             if (Integer.parseInt(queryRequestVo.getGameId()) == PlatGameTypeEnum.Sport.getCode()) {
-                ActionResult actionResult = sportBetService.getBetPageList(pageVo);
-                if (actionResult.getCode() == ApiStatus.FALLBACK) {
-                    return ResultFactory.error(actionResult.getMsg());
-                }
-                if (actionResult.getCode() != ApiStatus.SUCCESS) {
-                    return ResultFactory.error("接口异常");
-                }
-                return ResultFactory.success(actionResult.getData());
+                PageDto<MerchantSportBetDto> list = sportBetServiceApi.getBetPageList(pageVo);
+                return ResultFactory.success(list);
             }
+            //彩票暂时没有处理
             if (Integer.parseInt(queryRequestVo.getGameId()) == PlatGameTypeEnum.Lottery.getCode()) {
                 return ResultFactory.success();
             }
